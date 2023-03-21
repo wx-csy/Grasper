@@ -10,10 +10,9 @@ Authors: Aaron Li (cjli@cse.cuhk.edu.hk)
 #include "expert/abstract_expert.hpp"
 #include "expert/expert_cache.hpp"
 #include "storage/data_store.hpp"
-#include "utils/mkl_util.hpp"
 #include "utils/tool.hpp"
 
-#include <mkl_vsl.h>
+#include <random>
 
 namespace BarrierData {
 struct barrier_data_base {
@@ -25,9 +24,10 @@ struct barrier_data_base {
 template<class T = BarrierData::barrier_data_base>
 class BarrierExpertBase :  public AbstractExpert {
     static_assert(std::is_base_of<BarrierData::barrier_data_base, T>::value, "T must derive from barrier_data_base");
-    using BarrierDataTable = tbb::concurrent_hash_map<mkey_t, T, MkeyHashCompare>;
 
  public:
+    using BarrierDataTable = tbb::concurrent_hash_map<mkey_t, T, MkeyHashCompare>;
+
     BarrierExpertBase(int id, DataStore* data_store, CoreAffinity* core_affinity) : AbstractExpert(id, data_store, core_affinity) {}
 
     void process(const vector<Expert_Object> & experts, Message & msg) {
@@ -1011,16 +1011,13 @@ class CoinExpert : public BarrierExpertBase<BarrierData::range_data> {
             int sz = p.second.size();
 
             if (sz > 0) {
-                float* tmp_rand_arr = new float[sz];
-
-                MKLUtil::GetInstance()->UniformRNGF4(tmp_rand_arr, sz, 0.0, 1.0);
+                std::random_device rd;
+                std::mt19937 gen(rd());
 
                 for (int i = 0; i < sz; i++) {
-                    if (tmp_rand_arr[i] < rate)
+                    if (std::generate_canonical<float,24>(gen) < rate)
                         itr_vec->second.push_back(move(p.second[i]));
                 }
-
-                delete[] tmp_rand_arr;
             }
         }
 

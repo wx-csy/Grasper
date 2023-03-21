@@ -9,7 +9,7 @@ file(GLOB utils-src-files
     console_util.cpp
     tid_mapper.cpp
     mpi_unique_namer.cpp
-    mkl_util.cpp
+    #mkl_util.cpp
     )
 
 add_library(utils-objs OBJECT ${utils-src-files})
